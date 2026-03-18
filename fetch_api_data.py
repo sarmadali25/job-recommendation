@@ -5,7 +5,7 @@ url = "https://jsearch.p.rapidapi.com/search"
 
 headers = {
     "Content-Type" : "application/json",
-    "X-RapidAPI-Key": "4379fcc7femsh145747dad26a3dbp19fc65jsndbee0432d06a",
+    "X-RapidAPI-Key": "13a09fd7a7mshcabcf204e550ef5p1a19bdjsnc588d8c33791",
     "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
 }
 
@@ -19,6 +19,7 @@ def fetch_api_data(query: str = "" , page: int = 1, num_pages: int = 1, country:
     }
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
+    # print("data: ", data)
 
     return data
 

@@ -4,6 +4,7 @@ import datetime as dt
 from typing import Any, Dict, Iterable, List
 
 from psycopg import sql
+from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from db import get_connection
@@ -126,4 +127,28 @@ def upsert_jobs(jobs: Iterable[Dict[str, Any]]) -> int:
         conn.commit()
 
     return len(rows)
+
+
+def get_all_jobs() -> List[Dict[str, Any]]:
+    """
+    Fetch all jobs saved in the database.
+
+    Returns a list of dict rows (column -> value).
+    """
+    query = sql.SQL(
+        """
+        SELECT {columns}
+        FROM jobs
+        ORDER BY job_posted_at_datetime_utc DESC NULLS LAST, created_at DESC
+        """
+    ).format(columns=sql.SQL(", ").join(sql.Identifier(c) for c in (JOB_COLUMNS + ["created_at", "updated_at"])))
+
+    with get_connection() as conn:
+        conn.row_factory = dict_row
+        with conn.cursor() as cur:
+            cur.execute(query)
+            rows = cur.fetchall()
+
+    # psycopg's dict_row yields Dict[str, Any]-like objects; normalize to plain dict.
+    return [dict(r) for r in rows]
 

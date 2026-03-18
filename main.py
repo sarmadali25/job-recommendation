@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fetch_api_data import fetch_api_data
-from jobs_repository import upsert_jobs
+from jobs_repository import get_all_jobs, upsert_jobs
 
 app = FastAPI()
 
@@ -30,3 +30,18 @@ def refresh_jobs(query: str = "" , page: int = 1, num_pages: int = 1, country: s
         "persisted_count": persisted_count,
         "data": jobs,
     }
+
+
+@app.get("/jobs")
+def list_jobs():
+    """
+    Fetch all jobs saved in the database.
+    """
+    try:
+        jobs = get_all_jobs()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch jobs: {exc}")
+
+    return {"count": len(jobs), "data": jobs}
+
+    
