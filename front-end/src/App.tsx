@@ -50,8 +50,8 @@ function formatSalary(value: unknown): string {
 const App = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
-  const [skills, setSkills] = useState('Python, React, AWS')
-  const [preferredJobTypes, setPreferredJobTypes] = useState('Software Engineer')
+  const [skills, setSkills] = useState('')
+  const [preferredJobTypes, setPreferredJobTypes] = useState('')
   const [preferredLocations, setPreferredLocations] = useState('')
   const [salaryMin, setSalaryMin] = useState<string>('')
   const [salaryMax, setSalaryMax] = useState<string>('')
