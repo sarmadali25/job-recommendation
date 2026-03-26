@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler, LabelEncoder
@@ -636,140 +636,6 @@ def content_based_recommend(user_profile, tfidf_vectorizer, tfidf_matrix, featur
         return []
 
 # ============================================================================
-# RANKING-BASED RECOMMENDATION FUNCTIONS
-# ============================================================================
-
-def calculate_salary_score(job_data):
-    """Calculate normalized salary score."""
-    salaries = job_data['normalized_salary'].fillna(0)
-    
-    if salaries.max() == 0:
-        return pd.Series([0.5] * len(salaries), index=salaries.index)
-    
-    min_salary = salaries.min()
-    max_salary = salaries.max()
-    
-    if max_salary == min_salary:
-        return pd.Series([0.5] * len(salaries), index=salaries.index)
-    
-    normalized = (salaries - min_salary) / (max_salary - min_salary)
-    return normalized.fillna(0.5)
-
-def calculate_freshness_score(job_data, time_decay_days=30):
-    """Calculate freshness score based on days since posted."""
-    if 'days_since_posted' in job_data.columns:
-        days_since = job_data['days_since_posted'].fillna(365)
-    else:
-        days_since = pd.Series([365] * len(job_data), index=job_data.index)
-    
-    freshness_scores = np.exp(-days_since / time_decay_days)
-    freshness_scores = np.clip(freshness_scores, 0, 1)
-    
-    return pd.Series(freshness_scores, index=job_data.index)
-
-def calculate_popularity_score(job_data):
-    """Calculate popularity score based on company, skills, and remote status."""
-    popularity_scores = pd.Series([0.5] * len(job_data), index=job_data.index)
-    
-    if 'company_name' in job_data.columns:
-        company_counts = job_data['company_name'].value_counts()
-        company_scores = job_data['company_name'].map(company_counts)
-        if company_scores.max() > company_scores.min():
-            company_scores = (company_scores - company_scores.min()) / (company_scores.max() - company_scores.min())
-            popularity_scores += 0.3 * company_scores.fillna(0.5)
-    
-    if 'skill_count' in job_data.columns:
-        skill_counts = job_data['skill_count'].fillna(0)
-        if skill_counts.max() > 0:
-            skill_scores = skill_counts / skill_counts.max()
-            popularity_scores += 0.2 * skill_scores
-    
-    if 'job_work_from_home' in job_data.columns:
-        popularity_scores += 0.1 * job_data['job_work_from_home'].astype(int)
-    
-    if popularity_scores.max() > popularity_scores.min():
-        popularity_scores = (popularity_scores - popularity_scores.min()) / (popularity_scores.max() - popularity_scores.min())
-    
-    return popularity_scores.fillna(0.5)
-
-def calculate_ranking_scores(job_data, time_decay_days=30, salary_weight=0.3, freshness_weight=0.4, popularity_weight=0.3):
-    """Calculate ranking scores for jobs."""
-    job_data_copy = job_data.copy()
-    
-    job_data_copy['salary_score'] = calculate_salary_score(job_data_copy)
-    job_data_copy['freshness_score_rank'] = calculate_freshness_score(job_data_copy, time_decay_days)
-    job_data_copy['popularity_score'] = calculate_popularity_score(job_data_copy)
-    
-    job_data_copy['ranking_score'] = (
-        salary_weight * job_data_copy['salary_score'] +
-        freshness_weight * job_data_copy['freshness_score_rank'] +
-        popularity_weight * job_data_copy['popularity_score']
-    )
-    
-    return job_data_copy
-
-def apply_ranking_filters(job_data, filters):
-    """Apply filters to job data for ranking-based recommendations."""
-    filtered_data = job_data.copy()
-    
-    if 'min_salary' in filters and filters['min_salary']:
-        filtered_data = filtered_data[filtered_data['normalized_salary'] >= filters['min_salary']]
-    
-    if 'max_salary' in filters and filters['max_salary']:
-        filtered_data = filtered_data[filtered_data['normalized_salary'] <= filters['max_salary']]
-    
-    if 'location' in filters and filters['location']:
-        location_filter = filters['location'].lower()
-        filtered_data = filtered_data[
-            filtered_data['job_location'].str.lower().str.contains(location_filter, na=False, regex=False)
-        ]
-    
-    if 'remote_only' in filters and filters['remote_only']:
-        filtered_data = filtered_data[filtered_data['job_work_from_home'] == True]
-    
-    return filtered_data
-
-def ranking_based_recommend(job_data_with_scores, user_profile=None, n_recommendations=10, filters=None):
-    """Generate ranking-based recommendations."""
-    try:
-        candidate_jobs = job_data_with_scores.copy()
-        
-        if filters:
-            candidate_jobs = apply_ranking_filters(candidate_jobs, filters)
-        
-        if len(candidate_jobs) == 0:
-            return []
-        
-        candidate_jobs = candidate_jobs.sort_values('ranking_score', ascending=False)
-        top_jobs = candidate_jobs.head(n_recommendations)
-        
-        recommendations = []
-        for i, (job_idx, job) in enumerate(top_jobs.iterrows()):
-            recommendation = {
-                'job_id': job.get('job_id', job_idx),
-                'job_title': job.get('job_title', 'N/A'),
-                'job_title_short': job.get('job_title_short', 'N/A'),
-                'company_name': job.get('company_name', 'N/A'),
-                'job_location': job.get('job_location', 'N/A'),
-                'normalized_salary': job.get('normalized_salary', 0),
-                'job_work_from_home': job.get('job_work_from_home', False),
-                'job_health_insurance': job.get('job_health_insurance', False),
-                'all_skills': job.get('all_skills', []),
-                'days_since_posted': job.get('days_since_posted', 365),
-                'similarity_score': float(job['ranking_score']),
-                'ranking_score': float(job['ranking_score']),
-                'rank': i + 1,
-                'algorithm': 'ranking_based'
-            }
-            
-            recommendations.append(recommendation)
-        
-        return recommendations
-    
-    except Exception as e:
-        return []
-
-# ============================================================================
 # MAIN RECOMMENDATION SYSTEM
 # ============================================================================
 
@@ -793,14 +659,6 @@ def initialize_recommendation_system_json(json_path):
             processed_data, max_features=2500, ngram_range=(1, 2)
         )
         
-        ranking_job_data = calculate_ranking_scores(
-            processed_data,
-            time_decay_days=30,
-            salary_weight=0.3,
-            freshness_weight=0.4,
-            popularity_weight=0.3
-        )
-        
         stats = get_summary_stats(processed_data)
         
         return {
@@ -811,7 +669,6 @@ def initialize_recommendation_system_json(json_path):
             'feature_scaler': feature_scaler,
             'feature_columns': feature_columns,
             'content_job_data': content_job_data,
-            'ranking_job_data': ranking_job_data,
             'stats': stats
         }
     
@@ -841,14 +698,6 @@ def initialize_recommendation_system_from_jobs(jobs):
             processed_data, max_features=2500, ngram_range=(1, 2)
         )
 
-        ranking_job_data = calculate_ranking_scores(
-            processed_data,
-            time_decay_days=30,
-            salary_weight=0.3,
-            freshness_weight=0.4,
-            popularity_weight=0.3
-        )
-
         stats = get_summary_stats(processed_data)
 
         # `content_job_data` is the processed_df copy returned by fit_content_based_model.
@@ -860,7 +709,6 @@ def initialize_recommendation_system_from_jobs(jobs):
             'feature_scaler': feature_scaler,
             'feature_columns': feature_columns,
             'content_job_data': processed_data.copy(),
-            'ranking_job_data': ranking_job_data,
             'stats': stats
         }
 
@@ -868,105 +716,24 @@ def initialize_recommendation_system_from_jobs(jobs):
         print(f"Error: {str(e)}")
         return None
 
-def get_recommendations(system_data, user_profile, n_recommendations=12, filters=None, method='mixed'):
-    """Get job recommendations using specified method."""
+def get_recommendations(system_data, user_profile, n_recommendations=12, filters=None, method='content'):
+    """Get job recommendations using content-based method."""
     if system_data is None:
         return []
     
     try:
-        if method == 'content':
-            recommendations = content_based_recommend(
-                user_profile=user_profile,
-                tfidf_vectorizer=system_data['tfidf_vectorizer'],
-                tfidf_matrix=system_data['tfidf_matrix'],
-                feature_matrix=system_data['feature_matrix'],
-                feature_scaler=system_data['feature_scaler'],
-                feature_columns=system_data['feature_columns'],
-                job_data=system_data['content_job_data'],
-                n_recommendations=n_recommendations,
-                filters=filters
-            )
-        elif method == 'ranking':
-            recommendations = ranking_based_recommend(
-                job_data_with_scores=system_data['ranking_job_data'],
-                user_profile=user_profile,
-                n_recommendations=n_recommendations,
-                filters=filters
-            )
-        else:
-            # Mixed method
-            content_recs = content_based_recommend(
-                user_profile=user_profile,
-                tfidf_vectorizer=system_data['tfidf_vectorizer'],
-                tfidf_matrix=system_data['tfidf_matrix'],
-                feature_matrix=system_data['feature_matrix'],
-                feature_scaler=system_data['feature_scaler'],
-                feature_columns=system_data['feature_columns'],
-                job_data=system_data['content_job_data'],
-                n_recommendations=n_recommendations,
-                filters=filters
-            )
-            ranking_recs = ranking_based_recommend(
-                job_data_with_scores=system_data['ranking_job_data'],
-                user_profile=user_profile,
-                n_recommendations=n_recommendations,
-                filters=filters
-            )
-            
-            # Fallback mechanism if filters are too restrictive
-            if (len(content_recs) == 0 or len(ranking_recs) == 0) and filters:
-                fallback_filters = {}
-                if 'min_salary' in filters:
-                    fallback_filters['min_salary'] = max(50000, filters['min_salary'])
-                if 'max_salary' in filters:
-                    fallback_filters['max_salary'] = max(150000, filters['max_salary'])
-                
-                if len(content_recs) == 0:
-                    content_recs = content_based_recommend(
-                        user_profile=user_profile,
-                        tfidf_vectorizer=system_data['tfidf_vectorizer'],
-                        tfidf_matrix=system_data['tfidf_matrix'],
-                        feature_matrix=system_data['feature_matrix'],
-                        feature_scaler=system_data['feature_scaler'],
-                        feature_columns=system_data['feature_columns'],
-                        job_data=system_data['content_job_data'],
-                        n_recommendations=n_recommendations,
-                        filters=fallback_filters
-                    )
-                
-                if len(ranking_recs) == 0:
-                    ranking_recs = ranking_based_recommend(
-                        job_data_with_scores=system_data['ranking_job_data'],
-                        user_profile=user_profile,
-                        n_recommendations=n_recommendations,
-                        filters=fallback_filters
-                    )
-            
-            # Combine and deduplicate
-            import random
-            mixed_recommendations = []
-            seen_job_ids = set()
-            max_length = max(len(content_recs), len(ranking_recs))
-            
-            for i in range(max_length):
-                if i < len(content_recs):
-                    job = content_recs[i]
-                    if job.get('job_id') not in seen_job_ids:
-                        mixed_recommendations.append(job)
-                        seen_job_ids.add(job.get('job_id'))
-                
-                if i < len(ranking_recs):
-                    job = ranking_recs[i]
-                    if job.get('job_id') not in seen_job_ids:
-                        mixed_recommendations.append(job)
-                        seen_job_ids.add(job.get('job_id'))
-            
-            random.shuffle(mixed_recommendations)
-            recommendations = mixed_recommendations[:n_recommendations]
-            
-            # Update ranks to match final display order
-            for i, job in enumerate(recommendations, 1):
-                job['rank'] = i
+        # Ranking/mixed methods were removed; keep `method` argument for backward compatibility.
+        recommendations = content_based_recommend(
+            user_profile=user_profile,
+            tfidf_vectorizer=system_data['tfidf_vectorizer'],
+            tfidf_matrix=system_data['tfidf_matrix'],
+            feature_matrix=system_data['feature_matrix'],
+            feature_scaler=system_data['feature_scaler'],
+            feature_columns=system_data['feature_columns'],
+            job_data=system_data['content_job_data'],
+            n_recommendations=n_recommendations,
+            filters=filters
+        )
         
         return recommendations
     
@@ -1208,7 +975,7 @@ if __name__ == "__main__":
             user_profile=user_profile,
             n_recommendations=12,
             filters=None,
-            method='mixed'
+            method='content'
         )
         
         if recommendations:
