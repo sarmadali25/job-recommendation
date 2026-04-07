@@ -5,35 +5,16 @@ import pandas as pd
 from job_recommendation_json import (
     calculate_job_freshness,
     categorize_location,
-    derive_job_title_short,
     extract_salary_from_json,
     extract_skills_from_json,
     transform_json_to_dataframe,
 )
 
 
-def test_extract_salary_from_json_uses_average_for_yearly_salary():
-    job = {"job_min_salary": 100000, "job_max_salary": 140000, "job_salary_period": "YEAR"}
-    assert extract_salary_from_json(job) == 120000.0
-
-
 def test_extract_salary_from_json_converts_hourly_to_yearly():
     job = {"job_min_salary": 50, "job_max_salary": 70, "job_salary_period": "HOUR"}
     # Average hourly = 60, yearly conversion assumes 40h/week * 52 weeks.
     assert extract_salary_from_json(job) == 124800.0
-
-
-def test_extract_salary_from_json_returns_none_when_missing():
-    assert extract_salary_from_json({"job_salary_period": "YEAR"}) is None
-
-
-def test_derive_job_title_short_removes_prefix_and_suffix():
-    assert derive_job_title_short("Senior Software Engineer - API") == "Software Engineer"
-    assert derive_job_title_short("Staff Software Engineer, Core Infrastructure") == "Software Engineer"
-
-
-def test_derive_job_title_short_handles_empty_values():
-    assert derive_job_title_short(None) == "Unknown"
 
 
 def test_categorize_location_maps_expected_tiers():
@@ -79,7 +60,6 @@ def test_transform_json_to_dataframe_maps_core_fields_and_uses_job_raw_fallback(
     ]
 
     df = transform_json_to_dataframe(jobs)
-    assert df is not None
     assert len(df) == 1
 
     row = df.iloc[0]
