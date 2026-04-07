@@ -1,69 +1,73 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState } from "react";
 
-type RemotePreference = 'no_preference' | 'preferred' | 'required'
+type RemotePreference = "no_preference" | "preferred" | "required";
 
 type UserProfile = {
-  skills: string[]
-  preferred_job_types: string[]
-  preferred_locations: string[]
+  skills: string[];
+  preferred_job_types: string[];
+  preferred_locations: string[];
   salary_range: {
-    min?: number
-    max?: number
-  }
-  remote_preference: RemotePreference
-}
+    min?: number;
+    max?: number;
+  };
+  remote_preference: RemotePreference;
+};
 
 type RecommendRequest = {
-  user_profile: UserProfile
-}
+  user_profile: UserProfile;
+};
 
 type JobRecommendation = {
-  job_id?: string
-  rank?: number
-  job_title?: string
-  job_title_short?: string
-  company_name?: string
-  job_location?: string
-  normalized_salary?: number
-  job_work_from_home?: boolean
-  job_health_insurance?: boolean
-  days_since_posted?: number
-  similarity_score?: number
-  ranking_score?: number
-  all_skills?: string[]
-  algorithm?: string
-}
+  job_id?: string;
+  rank?: number;
+  job_title?: string;
+  job_title_short?: string;
+  company_name?: string;
+  job_location?: string;
+  normalized_salary?: number;
+  job_work_from_home?: boolean;
+  job_health_insurance?: boolean;
+  days_since_posted?: number;
+  similarity_score?: number;
+  ranking_score?: number;
+  all_skills?: string[];
+  algorithm?: string;
+};
 
 function parseCommaOrNewlineList(value: string): string[] {
   return value
     .split(/,|\n/)
     .map((s) => s.trim())
-    .filter(Boolean)
+    .filter(Boolean);
 }
 
 function formatSalary(value: unknown): string {
-  const n = typeof value === 'number' ? value : Number(value)
-  if (!Number.isFinite(n) || n <= 0) return '-'
-  return n.toFixed(0)
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  return n.toFixed(0);
 }
 
 const App = () => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-  const [skills, setSkills] = useState('')
-  const [preferredJobTypes, setPreferredJobTypes] = useState('')
-  const [preferredLocations, setPreferredLocations] = useState('')
-  const [salaryMin, setSalaryMin] = useState<string>('')
-  const [salaryMax, setSalaryMax] = useState<string>('')
-  const [remotePreference, setRemotePreference] = useState<RemotePreference>('no_preference')
+  const [skills, setSkills] = useState("");
+  const [preferredJobTypes, setPreferredJobTypes] = useState("");
+  const [preferredLocations, setPreferredLocations] = useState("");
+  const [salaryMin, setSalaryMin] = useState<string>("");
+  const [salaryMax, setSalaryMax] = useState<string>("");
+  const [remotePreference, setRemotePreference] =
+    useState<RemotePreference>("no_preference");
 
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [recommendations, setRecommendations] = useState<JobRecommendation[] | null>(null)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<
+    JobRecommendation[] | null
+  >(null);
 
   const requestBody: RecommendRequest = useMemo(() => {
-    const min = salaryMin.trim() === '' ? undefined : Number(salaryMin)
-    const max = salaryMax.trim() === '' ? undefined : Number(salaryMax)
+    const min = salaryMin.trim() === "" ? undefined : Number(salaryMin);
+    const max = salaryMax.trim() === "" ? undefined : Number(salaryMax);
 
     return {
       user_profile: {
@@ -76,34 +80,43 @@ const App = () => {
         },
         remote_preference: remotePreference,
       },
-    }
-  }, [skills, preferredJobTypes, preferredLocations, salaryMin, salaryMax, remotePreference])
+    };
+  }, [
+    skills,
+    preferredJobTypes,
+    preferredLocations,
+    salaryMin,
+    salaryMax,
+    remotePreference,
+  ]);
 
   async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
 
-    setLoading(true)
-    setError(null)
-    setRecommendations(null)
+    setLoading(true);
+    setError(null);
+    setRecommendations(null);
 
     try {
       const res = await fetch(`${API_BASE_URL}/recommendations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
-      })
+      });
 
       if (!res.ok) {
-        const text = await res.text().catch(() => '')
-        throw new Error(text || `Request failed with status ${res.status}`)
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Request failed with status ${res.status}`);
       }
 
-      const data = (await res.json()) as JobRecommendation[]
-      setRecommendations(Array.isArray(data) ? data : [])
+      const data = (await res.json()) as JobRecommendation[];
+      setRecommendations(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch recommendations')
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch recommendations",
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -113,7 +126,9 @@ const App = () => {
 
       <form onSubmit={onSubmit} className="space-y-6 rounded-lg border p-4">
         <div className="space-y-2">
-          <label className="block text-sm font-medium">Skills (comma or newline separated)</label>
+          <label className="block text-sm font-medium">
+            Skills (comma or newline separated)
+          </label>
           <textarea
             className="w-full rounded border p-2"
             rows={3}
@@ -125,7 +140,9 @@ const App = () => {
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium">Preferred job types</label>
+          <label className="block text-sm font-medium">
+            Preferred job types
+          </label>
           <textarea
             className="w-full rounded border p-2"
             rows={2}
@@ -136,7 +153,9 @@ const App = () => {
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium">Preferred locations</label>
+          <label className="block text-sm font-medium">
+            Preferred locations
+          </label>
           <textarea
             className="w-full rounded border p-2"
             rows={2}
@@ -174,7 +193,9 @@ const App = () => {
           <select
             className="w-full rounded border p-2"
             value={remotePreference}
-            onChange={(e) => setRemotePreference(e.target.value as RemotePreference)}
+            onChange={(e) =>
+              setRemotePreference(e.target.value as RemotePreference)
+            }
           >
             <option value="no_preference">No preference</option>
             <option value="preferred">Preferred</option>
@@ -194,13 +215,17 @@ const App = () => {
       </form>
 
       {error ? (
-        <div className="mt-5 rounded border border-red-300 bg-red-50 p-3 text-red-800">{error}</div>
+        <div className="mt-5 rounded border border-red-300 bg-red-50 p-3 text-red-800">
+          {error}
+        </div>
       ) : null}
 
       {recommendations ? (
         <div className="mt-6">
           {recommendations.length === 0 ? (
-            <div className="rounded border p-4 text-sm text-gray-700">No recommendations found.</div>
+            <div className="rounded border p-4 text-sm text-gray-700">
+              No recommendations found.
+            </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border">
               <table className="min-w-full border-collapse text-left text-sm">
@@ -213,33 +238,46 @@ const App = () => {
                     <th className="border-b px-3 py-2">Remote</th>
                     <th className="border-b px-3 py-2">Salary</th>
                     <th className="border-b px-3 py-2">Score</th>
-                    <th className="border-b px-3 py-2">Algorithm</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recommendations.map((job) => {
-                    const title = job.job_title_short || job.job_title || 'N/A'
+                    const title = job.job_title_short || job.job_title || "N/A";
                     const score =
-                      typeof job.similarity_score === 'number'
+                      typeof job.similarity_score === "number"
                         ? job.similarity_score
-                        : typeof job.ranking_score === 'number'
+                        : typeof job.ranking_score === "number"
                           ? job.ranking_score
-                          : undefined
+                          : undefined;
 
                     return (
-                      <tr key={job.job_id ?? `${job.rank ?? 0}-${title}`} className="hover:bg-gray-50">
-                        <td className="border-b px-3 py-2">{job.rank ?? '-'}</td>
-                        <td className="border-b px-3 py-2 font-medium">{title}</td>
-                        <td className="border-b px-3 py-2">{job.company_name ?? '-'}</td>
-                        <td className="border-b px-3 py-2">{job.job_location ?? '-'}</td>
-                        <td className="border-b px-3 py-2">{job.job_work_from_home ? 'Yes' : 'No'}</td>
-                        <td className="border-b px-3 py-2">{formatSalary(job.normalized_salary)}</td>
+                      <tr
+                        key={job.job_id ?? `${job.rank ?? 0}-${title}`}
+                        className="hover:bg-gray-50"
+                      >
                         <td className="border-b px-3 py-2">
-                          {typeof score === 'number' ? score.toFixed(3) : '-'}
+                          {job.rank ?? "-"}
                         </td>
-                        <td className="border-b px-3 py-2">{job.algorithm ?? '-'}</td>
+                        <td className="border-b px-3 py-2 font-medium">
+                          {title}
+                        </td>
+                        <td className="border-b px-3 py-2">
+                          {job.company_name ?? "-"}
+                        </td>
+                        <td className="border-b px-3 py-2">
+                          {job.job_location ?? "-"}
+                        </td>
+                        <td className="border-b px-3 py-2">
+                          {job.job_work_from_home ? "Yes" : "No"}
+                        </td>
+                        <td className="border-b px-3 py-2">
+                          {formatSalary(job.normalized_salary)}
+                        </td>
+                        <td className="border-b px-3 py-2">
+                          {typeof score === "number" ? score.toFixed(3) : "-"}
+                        </td>
                       </tr>
-                    )
+                    );
                   })}
                 </tbody>
               </table>
@@ -248,9 +286,11 @@ const App = () => {
         </div>
       ) : null}
 
-      {loading && !recommendations ? <div className="mt-6 text-sm text-gray-600">Loading...</div> : null}
+      {loading && !recommendations ? (
+        <div className="mt-6 text-sm text-gray-600">Loading...</div>
+      ) : null}
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
