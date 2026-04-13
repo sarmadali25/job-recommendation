@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -21,6 +22,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_JOBS_CACHE: Optional[List[Any]] = None
+_JOBS_CACHE_EXPIRES_AT_MONO: float = 0.0
+_JOBS_CACHE_TTL_SEC = 30 * 60
+
+
+def _invalidate_jobs_cache() -> None:
+    global _JOBS_CACHE, _JOBS_CACHE_EXPIRES_AT_MONO
+    _JOBS_CACHE = None
+    _JOBS_CACHE_EXPIRES_AT_MONO = 0.0
+
+
+def _get_cached_all_jobs() -> List[Any]:
+    """Return all jobs from DB, using an in-memory cache for `_JOBS_CACHE_TTL_SEC`."""
+    global _JOBS_CACHE, _JOBS_CACHE_EXPIRES_AT_MONO
+    now = time.monotonic()
+    if _JOBS_CACHE is not None and now < _JOBS_CACHE_EXPIRES_AT_MONO:
+        return _JOBS_CACHE
+    jobs = get_all_jobs()
+    _JOBS_CACHE = jobs
+    _JOBS_CACHE_EXPIRES_AT_MONO = now + _JOBS_CACHE_TTL_SEC
+    return jobs
+
 
 @app.get("/")
 def read_root():
@@ -42,6 +65,8 @@ def refresh_jobs(query: str = "" , page: int = 1, num_pages: int = 1, country: s
         # In a real app you might log this instead of exposing details.
         raise HTTPException(status_code=500, detail=f"Failed to persist jobs: {exc}")
 
+    _invalidate_jobs_cache()
+
     return {
         "message": "Jobs refreshed successfully",
         "persisted_count": persisted_count,
@@ -55,7 +80,7 @@ def list_jobs():
     Fetch all jobs saved in the database.
     """
     try:
-        jobs = get_all_jobs()
+        jobs = _get_cached_all_jobs()
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to fetch jobs: {exc}")
 
@@ -124,7 +149,7 @@ def recommend_jobs(req: RecommendRequest):
     Response is a JSON array of recommendation objects.
     """
     try:
-        jobs = get_all_jobs()
+        jobs = _get_cached_all_jobs()
         system_data = initialize_recommendation_system_from_jobs(jobs)
         if system_data is None:
             return []
