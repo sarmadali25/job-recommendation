@@ -134,7 +134,7 @@ const App = () => {
             rows={3}
             value={skills}
             onChange={(e) => setSkills(e.target.value)}
-            placeholder="e.g. React, TypeScript, SQL"
+            placeholder="e.g. SQL, Python, Tableau, machine learning, Spark, ETL, requirements analysis"
             required={parseCommaOrNewlineList(skills).length > 0}
           />
         </div>
@@ -148,7 +148,7 @@ const App = () => {
             rows={2}
             value={preferredJobTypes}
             onChange={(e) => setPreferredJobTypes(e.target.value)}
-            placeholder="e.g. backend, frontend, data engineer"
+            placeholder="e.g. data analyst, data scientist, data engineer, business analyst"
           />
         </div>
 
