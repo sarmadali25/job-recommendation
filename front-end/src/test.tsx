@@ -26,8 +26,10 @@ describe('frontend-backend integration flow', () => {
     render(<App />)
 
     fireEvent.change(
-      screen.getByPlaceholderText(/e\.g\. React, TypeScript, SQL/i),
-      { target: { value: 'Python, SQL' } }
+      screen.getByPlaceholderText(
+        /e\.g\. SQL, Python, Tableau, machine learning/i,
+      ),
+      { target: { value: 'Python, SQL' } },
     )
 
     fireEvent.click(screen.getByRole('button', { name: /Get Recommendations/i }))
@@ -38,10 +40,13 @@ describe('frontend-backend integration flow', () => {
     expect(url).toContain('/recommendations')
     expect(options.method).toBe('POST')
     expect(options.headers).toEqual({ 'Content-Type': 'application/json' })
-    expect(String(options.body)).toContain('"skills":["Python","SQL"]')
+    const body = String(options.body)
+    expect(body).toContain('"user_profile"')
+    expect(body).toContain('"skills":["Python","SQL"]')
+    expect(body).toContain('"remote_preference":"no_preference"')
 
     expect(await screen.findByText('Backend Engineer')).toBeInTheDocument()
     expect(screen.getByText('Acme')).toBeInTheDocument()
-    expect(screen.getByText('content')).toBeInTheDocument()
+    expect(screen.getByText('0.910')).toBeInTheDocument()
   })
 })
