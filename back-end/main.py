@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from fetch_api_data import fetch_api_data
 from jobs_repository import get_all_jobs, upsert_jobs
-from job_recommendation_json import (
+from recommendation_engine import (
     get_recommendations,
     initialize_recommendation_system_from_jobs,
 )

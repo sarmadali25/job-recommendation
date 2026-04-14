@@ -2,12 +2,14 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from job_recommendation_json import (
-    calculate_job_freshness,
-    categorize_location,
+from data_loading import (
     extract_salary_from_json,
     extract_skills_from_json,
     transform_json_to_dataframe,
+)
+from preprocessing import (
+    calculate_job_freshness,
+    categorize_location,
 )
 
 

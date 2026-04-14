@@ -21,13 +21,13 @@ The **React frontend** collects a user profile (skills, preferred job types, loc
 
 ## Tech Stack
 
-| Layer | Technologies |
-|---|---|
-| **Frontend** | React 18, TypeScript, Vite 5, Tailwind CSS 3, Vitest, Testing Library |
-| **Backend** | Python, FastAPI, Uvicorn, Pydantic |
-| **Database** | PostgreSQL, psycopg (v3) |
-| **ML / Data** | pandas, NumPy, scikit-learn (TF-IDF, cosine similarity, StandardScaler, SimpleImputer, LabelEncoder) |
-| **External API** | JSearch via RapidAPI |
+| Layer            | Technologies                                                                                         |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| **Frontend**     | React 18, TypeScript, Vite 5, Tailwind CSS 3, Vitest, Testing Library                                |
+| **Backend**      | Python, FastAPI, Uvicorn, Pydantic                                                                   |
+| **Database**     | PostgreSQL, psycopg (v3)                                                                             |
+| **ML / Data**    | pandas, NumPy, scikit-learn (TF-IDF, cosine similarity, StandardScaler, SimpleImputer, LabelEncoder) |
+| **External API** | JSearch via RapidAPI                                                                                 |
 
 ## Project Structure
 
@@ -86,33 +86,33 @@ There are also built-in evaluation functions that compute precision, recall, F1 
 
 ### API Endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/` | Health check / welcome message |
-| `GET` | `/health` | Returns `{"status": "ok"}` |
-| `GET` | `/refresh-jobs` | Fetches jobs from JSearch API and upserts them into the database. Accepts query params: `query`, `page`, `num_pages`, `country`, `date_posted`. |
-| `GET` | `/jobs` | Returns all stored jobs from the database (cached in-memory for 30 minutes). |
-| `POST` | `/recommendations` | Accepts a user profile and returns ranked job recommendations. |
+| Method | Path               | Description                                                                                                                                     |
+| ------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/`                | Health check / welcome message                                                                                                                  |
+| `GET`  | `/health`          | Returns `{"status": "ok"}`                                                                                                                      |
+| `GET`  | `/refresh-jobs`    | Fetches jobs from JSearch API and upserts them into the database. Accepts query params: `query`, `page`, `num_pages`, `country`, `date_posted`. |
+| `GET`  | `/jobs`            | Returns all stored jobs from the database (cached in-memory for 30 minutes).                                                                    |
+| `POST` | `/recommendations` | Accepts a user profile and returns ranked job recommendations.                                                                                  |
 
 #### POST `/recommendations` Request Body
 
 ```json
 {
-  "user_profile": {
-    "skills": ["Python", "SQL", "Docker"],
-    "preferred_job_types": ["Data Engineer", "Backend Developer"],
-    "preferred_locations": ["Remote", "San Francisco"],
-    "salary_range": { "min": 100000, "max": 160000 },
-    "remote_preference": "preferred"
-  },
-  "n_recommendations": 12,
-  "filters": {
-    "min_salary": 90000,
-    "max_salary": 200000,
-    "location": "San Francisco",
-    "remote_only": false
-  },
-  "method": "content"
+	"user_profile": {
+		"skills": ["Python", "SQL", "Docker"],
+		"preferred_job_types": ["Data Engineer", "Backend Developer"],
+		"preferred_locations": ["Remote", "San Francisco"],
+		"salary_range": { "min": 100000, "max": 160000 },
+		"remote_preference": "preferred"
+	},
+	"n_recommendations": 12,
+	"filters": {
+		"min_salary": 90000,
+		"max_salary": 200000,
+		"location": "San Francisco",
+		"remote_only": false
+	},
+	"method": "content"
 }
 ```
 
@@ -185,20 +185,20 @@ The frontend reads `VITE_API_BASE_URL` from the environment to locate the backen
 
 Create a `back-end/.env` file with these variables:
 
-| Variable | Description | Example |
-|---|---|---|
-| `DB_HOST` | PostgreSQL host | `localhost` |
-| `DB_PORT` | PostgreSQL port | `5432` |
-| `DB_NAME` | Database name | `job_recommendations` |
-| `DB_USER` | Database user | `postgres` |
-| `DB_PASSWORD` | Database password | `your_password` |
-| `DATABASE_URL` | Full connection string (alternative to individual DB_* vars) | `postgresql://user:pass@host:5432/dbname` |
-| `RAPID_API_KEY` | RapidAPI key for JSearch | `your_rapidapi_key` |
+| Variable        | Description                                                    | Example                                   |
+| --------------- | -------------------------------------------------------------- | ----------------------------------------- |
+| `DB_HOST`       | PostgreSQL host                                                | `localhost`                               |
+| `DB_PORT`       | PostgreSQL port                                                | `5432`                                    |
+| `DB_NAME`       | Database name                                                  | `job_recommendations`                     |
+| `DB_USER`       | Database user                                                  | `postgres`                                |
+| `DB_PASSWORD`   | Database password                                              | `your_password`                           |
+| `DATABASE_URL`  | Full connection string (alternative to individual DB\_\* vars) | `postgresql://user:pass@host:5432/dbname` |
+| `RAPID_API_KEY` | RapidAPI key for JSearch                                       | `your_rapidapi_key`                       |
 
 For the frontend (optional):
 
-| Variable | Description | Default |
-|---|---|---|
+| Variable            | Description | Default                 |
+| ------------------- | ----------- | ----------------------- |
 | `VITE_API_BASE_URL` | Backend URL | `http://localhost:8000` |
 
 ## API Reference
@@ -210,6 +210,7 @@ GET /refresh-jobs?query=python+developer&page=1&num_pages=1&country=all&date_pos
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Jobs refreshed successfully",
@@ -225,6 +226,7 @@ GET /jobs
 ```
 
 **Response:**
+
 ```json
 {
   "count": 42,
@@ -241,19 +243,19 @@ Content-Type: application/json
 
 **Response:** Each recommendation object contains:
 
-| Field | Type | Description |
-|---|---|---|
-| `job_id` | string | Unique job identifier |
-| `rank` | int | Position in recommendation list |
-| `job_title` | string | Full job title |
-| `job_title_short` | string | Normalized short title |
-| `company_name` | string | Employer name |
-| `job_location` | string | Job location |
-| `normalized_salary` | float | Annual salary estimate |
-| `job_work_from_home` | bool | Remote availability |
-| `all_skills` | string[] | Extracted skill keywords |
-| `similarity_score` | float | Content similarity score (0-1) |
-| `algorithm` | string | Algorithm used (`content_based`) |
+| Field                | Type     | Description                      |
+| -------------------- | -------- | -------------------------------- |
+| `job_id`             | string   | Unique job identifier            |
+| `rank`               | int      | Position in recommendation list  |
+| `job_title`          | string   | Full job title                   |
+| `job_title_short`    | string   | Normalized short title           |
+| `company_name`       | string   | Employer name                    |
+| `job_location`       | string   | Job location                     |
+| `normalized_salary`  | float    | Annual salary estimate           |
+| `job_work_from_home` | bool     | Remote availability              |
+| `all_skills`         | string[] | Extracted skill keywords         |
+| `similarity_score`   | float    | Content similarity score (0-1)   |
+| `algorithm`          | string   | Algorithm used (`content_based`) |
 
 ## Testing
 
@@ -272,4 +274,8 @@ The test suite covers salary extraction and hourly-to-yearly conversion, locatio
 ```bash
 cd front-end
 npm test
+```
+
+```
+This README.md is generated by CURSOR
 ```
