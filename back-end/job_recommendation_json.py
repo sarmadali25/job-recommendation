@@ -492,7 +492,9 @@ def fit_content_based_model(job_data, max_features=2500, ngram_range=(1, 2)):
         
         if 'job_work_from_home' in job_data.columns:
             feature_columns.append('remote')
-            feature_data.append(job_data['job_work_from_home'].astype(int))
+            # Source data can contain nulls for this field; coerce safely to 0/1.
+            remote_series = job_data['job_work_from_home'].astype('boolean').fillna(False).astype(int)
+            feature_data.append(remote_series)
         
         feature_matrix = None
         feature_scaler = StandardScaler()
@@ -697,6 +699,8 @@ def initialize_recommendation_system_from_jobs(jobs):
         tfidf_vectorizer, tfidf_matrix, feature_matrix, feature_scaler, feature_columns, _ = fit_content_based_model(
             processed_data, max_features=2500, ngram_range=(1, 2)
         )
+        if tfidf_vectorizer is None or tfidf_matrix is None:
+            return None
 
         stats = get_summary_stats(processed_data)
 
